@@ -1,37 +1,47 @@
 const Transaction = require("../models/transaction.model");
 
 const createTransaction = async (req, res) => {
+  const { name, phone, amount, type, note } = req.body;
   try {
-    const {
-      user,
-      contactName,
-      contactPhone,
+    let contact = await Contact.findOne({ user: req.user._id, phone });
+    if (!contact) {
+      contact = new Contact({
+        user: req.user._id,
+        name: name,
+        phone,
+        totalLent: type === "lent" ? amount : 0,
+        totalBorrowed: type === "borrowed" ? amount : 0,
+      });
+      await contact.save();
+    } else {
+      if (type === "lent") {
+        contact.totalLent += amount;
+      } else if (type === "borrowed") {
+        contact.totalBorrowed += amount;
+      }
+      await contact.save();
+    }
+    const transaction = new Transaction({
+      user: req.user._id,
+      contact: contact._id,
       amount,
       type,
-      note,
-      date,
-      isSettled,
-    } = req.body;
-    const transaction = await Transaction.create({
-      user,
-      contactName,
-      contactPhone,
-      amount,
-      type,
-      note,
-      date,
-      isSettled,
+      description,
     });
-    res.status(201).json(transaction);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+    await transaction.save();
+    res.status(201)
+      .json({ message: "Transaction created successfully", transaction });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-const getTransactionsByUser = async (req, res) => {
+
+const getTransactionsByContact = async (req, res) => {
   try {
     const transactions = await Transaction.find({
-      user: req.params.userId,
+      user: req.user._id,
+      contact: req.body.phone,
     }).sort({ date: -1 });
     res.json(transactions);
   } catch (err) {
@@ -39,35 +49,7 @@ const getTransactionsByUser = async (req, res) => {
   }
 };
 
-const updateTransaction = async (req, res) => {
-  try {
-    const updated = await Transaction.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!updated)
-      return res.status(404).json({ error: "Transaction not found" });
-    res.json(updated);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-const deleteTransaction = async (req, res) => {
-  try {
-    const deleted = await Transaction.findByIdAndDelete(req.params.id);
-    if (!deleted)
-      return res.status(404).json({ error: "Transaction not found" });
-    res.json({ message: "Transaction deleted" });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
 module.exports = {
   createTransaction,
-  getTransactionsByUser,
-  updateTransaction,
-  deleteTransaction,
+  getTransactionsByContact,
 };

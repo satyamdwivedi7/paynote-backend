@@ -6,12 +6,10 @@ const transactionSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  contactName: {
-    type: String,
+  contact: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Contact",
     required: true,
-  },
-  contactPhone: {
-    type: String,
   },
   amount: {
     type: Number,
@@ -19,7 +17,7 @@ const transactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["lend", "borrow"],
+    enum: ["lent", "borrowed"],
     required: true,
   },
   note: {
@@ -28,10 +26,6 @@ const transactionSchema = new mongoose.Schema({
   date: {
     type: Date,
     default: Date.now,
-  },
-  isSettled: {
-    type: Boolean,
-    default: false,
   },
 });
 
