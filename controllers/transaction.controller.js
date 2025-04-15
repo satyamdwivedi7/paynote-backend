@@ -1,5 +1,5 @@
 const Transaction = require("../models/transaction.model");
-
+const Contact = require("../models/contact.model");
 const createTransaction = async (req, res) => {
   const { name, phone, amount, type, note } = req.body;
   try {
@@ -19,23 +19,23 @@ const createTransaction = async (req, res) => {
       } else if (type === "borrowed") {
         contact.totalBorrowed += amount;
       }
-      await contact.save();
+      contact = await contact.save();
     }
     const transaction = new Transaction({
       user: req.user._id,
       contact: contact._id,
       amount,
       type,
-      description,
+      note,
     });
     await transaction.save();
-    res.status(201)
+    return res
+      .status(201)
       .json({ message: "Transaction created successfully", transaction });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
-
 
 const getTransactionsByContact = async (req, res) => {
   try {
