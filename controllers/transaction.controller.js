@@ -15,9 +15,19 @@ const createTransaction = async (req, res) => {
       await contact.save();
     } else {
       if (type === "lent") {
-        contact.totalLent += amount;
+        if (contact.totalBorrowed >= amount) {
+          contact.totalBorrowed -= amount; // Reduce totalBorrowed first
+        } else {
+          contact.totalLent += amount - contact.totalBorrowed; // Add the remaining amount to totalLent
+          contact.totalBorrowed = 0; // Reset totalBorrowed
+        }
       } else if (type === "borrowed") {
-        contact.totalBorrowed += amount;
+        if (contact.totalLent >= amount) {
+          contact.totalLent -= amount; // Reduce totalLent first
+        } else {
+          contact.totalBorrowed += amount - contact.totalLent; // Add the remaining amount to totalBorrowed
+          contact.totalLent = 0; // Reset totalLent
+        }
       }
       contact = await contact.save();
     }
@@ -39,9 +49,16 @@ const createTransaction = async (req, res) => {
 
 const getTransactionsByContact = async (req, res) => {
   try {
+    const contact = await Contact.findOne({
+      user: req.user._id,
+      phone: req.body.phone,
+    });
+    if (!contact) {
+      return res.status(404).json({ message: "Contact not found" });
+    }
     const transactions = await Transaction.find({
       user: req.user._id,
-      contact: req.body.phone,
+      contact: contact._id,
     }).sort({ date: -1 });
     res.json(transactions);
   } catch (err) {

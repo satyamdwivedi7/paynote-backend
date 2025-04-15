@@ -4,6 +4,6 @@ const {createTransaction, getTransactionsByContact} = require("../controllers/tr
 const checkLoggedIn = require("../middlewares/auth.middleware");
 
 router.post("/create", checkLoggedIn ,createTransaction);
-router.post("/", getTransactionsByContact);
+router.post("/", checkLoggedIn, getTransactionsByContact);
 
 module.exports = router;
