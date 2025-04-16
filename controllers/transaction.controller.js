@@ -66,7 +66,19 @@ const getTransactionsByContact = async (req, res) => {
   }
 };
 
+const getTransactionByUser = async (req, res) => {
+  try {
+    const transactions = await Transaction.find({ user: req.user._id }).sort({
+      date: -1,
+    });
+    res.json(transactions);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
 module.exports = {
   createTransaction,
   getTransactionsByContact,
+  getTransactionByUser,
 };
