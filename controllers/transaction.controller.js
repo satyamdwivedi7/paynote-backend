@@ -70,7 +70,7 @@ const getTransactionByUser = async (req, res) => {
   try {
     const transactions = await Transaction.find({ user: req.user._id })
       .sort({ date: -1 })
-      .populate("contact", ["name"]); // Correctly chain populate
+      .populate("contact", ["name", "phone"]); // Correctly chain populate
 
     res.json(transactions); // Send the populated transactions as the response
   } catch (err) {
