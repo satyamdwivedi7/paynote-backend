@@ -16,17 +16,17 @@ const createTransaction = async (req, res) => {
     } else {
       if (type === "lent") {
         if (contact.totalBorrowed >= amount) {
-          contact.totalBorrowed -= amount; // Reduce totalBorrowed first
+          contact.totalBorrowed -= amount; 
         } else {
-          contact.totalLent += amount - contact.totalBorrowed; // Add the remaining amount to totalLent
-          contact.totalBorrowed = 0; // Reset totalBorrowed
+          contact.totalLent += amount - contact.totalBorrowed; 
+          contact.totalBorrowed = 0; 
         }
       } else if (type === "borrowed") {
         if (contact.totalLent >= amount) {
-          contact.totalLent -= amount; // Reduce totalLent first
+          contact.totalLent -= amount; 
         } else {
-          contact.totalBorrowed += amount - contact.totalLent; // Add the remaining amount to totalBorrowed
-          contact.totalLent = 0; // Reset totalLent
+          contact.totalBorrowed += amount - contact.totalLent; 
+          contact.totalLent = 0; 
         }
       }
       contact = await contact.save();
@@ -70,11 +70,75 @@ const getTransactionByUser = async (req, res) => {
   try {
     const transactions = await Transaction.find({ user: req.user._id })
       .sort({ date: -1 })
-      .populate("contact", ["name", "phone"]); // Correctly chain populate
+      .populate("contact", ["name", "phone"]); 
 
-    res.json(transactions); // Send the populated transactions as the response
+    res.json(transactions); 
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+};
+
+const editTransaction = async (req, res) => {
+  const { transactionId, amount, type, note } = req.body;
+
+  try {
+    const transaction = await Transaction.findById(transactionId).populate(
+      "contact"
+    );
+    if (!transaction) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+    const contact = transaction.contact;
+    if (!contact) {
+      return res.status(404).json({ error: "Associated contact not found" });
+    }
+    if (transaction.type === "lent") {
+      contact.totalLent -= transaction.amount;
+    } else if (transaction.type === "borrowed") {
+      contact.totalBorrowed -= transaction.amount;
+    }
+    if (type === "lent") {
+      contact.totalLent += amount;
+    } else if (type === "borrowed") {
+      contact.totalBorrowed += amount;
+    }
+    await contact.save();
+    transaction.amount = amount;
+    transaction.type = type;
+    transaction.note = note || "Unknown";
+    await transaction.save();
+    res
+      .status(200)
+      .json({ message: "Transaction updated successfully", transaction });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const deleteTransaction = async (req, res) => {
+  const { transactionId } = req.body;
+
+  try {
+    const transaction = await Transaction.findById(transactionId).populate(
+      "contact"
+    );
+    if (!transaction) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+    const contact = transaction.contact;
+    if (!contact) {
+      return res.status(404).json({ error: "Associated contact not found" });
+    }
+    if (transaction.type === "lent") {
+      contact.totalLent -= transaction.amount;
+    } else if (transaction.type === "borrowed") {
+      contact.totalBorrowed -= transaction.amount;
+    }
+    await contact.save();
+    await transaction.deleteOne();
+    res.status(200).json({ message: "Transaction deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -82,4 +146,6 @@ module.exports = {
   createTransaction,
   getTransactionsByContact,
   getTransactionByUser,
+  editTransaction,
+  deleteTransaction,
 };
