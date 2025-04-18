@@ -36,7 +36,7 @@ const createTransaction = async (req, res) => {
       contact: contact._id,
       amount,
       type,
-      note,
+      note: note || "Unknown",
     });
     await transaction.save();
     return res
